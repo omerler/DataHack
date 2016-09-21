@@ -21,10 +21,8 @@ def should_take(row):
             return False
     elif row.attrib['PostTypeId'] == '2':
         return row.attrib['ParentId'] in required_post_ids
-    elif row.attrib['PostTypeId'] in ['3', '4', '5']:
-        return False # 3 = Empty; 4,5 = Info page ---> not relevant
     else:
-        raise Exception('Unexpected PostTypeId: %s' % row.attrib['PostTypeId'])
+        return False
 
 with open(os.path.join(DIR, 'filtered_posts.json'), 'w') as output:
     
