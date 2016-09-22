@@ -128,5 +128,6 @@ token_to_global_freq = get_token_freqs()
 print 'There are %d tokens' % len(token_to_global_freq)
 tokens_sorted_by_freq = list(sorted(token_to_global_freq.keys(), key = lambda token: token_to_global_freq[token], reverse = True))
 
-token_to_vector = get_token_vectors()
+#token_to_vector = get_token_vectors()
+token_to_vector = {}
 print 'There are %d token vectors' % len(token_to_vector)

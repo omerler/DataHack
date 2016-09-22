@@ -74,7 +74,8 @@ def calculate_tokens_indicativity_scores():
 def get_tokens_indicativity_scores():
     return get_or_create(constants.INDICATIVITY_SCORES, calculate_tokens_indicativity_scores, 'token indicativity scores')
 
-token_to_indicativity_scores = get_tokens_indicativity_scores()
+#token_to_indicativity_scores = get_tokens_indicativity_scores()
+token_to_indicativity_scores = {}
 print 'There are %d indicativity scores' % len(token_to_indicativity_scores)
 
 def get_freq_distance(freq1, freq2):
