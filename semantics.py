@@ -14,6 +14,7 @@ distance between query tokens (query_token[1],..., query_token[k]) to reference 
 
 import random
 from collections import defaultdict, Counter
+import constants
 
 import numpy as np
 import scipy.stats
@@ -51,7 +52,7 @@ def calculate_tokens_indicativity_scores():
     
     token_cofreqs = defaultdict(list) 
     
-    for i, post in enumerate(get_posts(r'C://downloads/code_project/filtered_posts.json')):
+    for i, post in enumerate(get_posts(constants.FILTERED_POSTS)):
     
         if i % 5000 == 0:
             print 'Processed %d posts [%d%%]' % (i, int(100.0 * float(i) / TOTAL_POSTS))
@@ -71,7 +72,7 @@ def calculate_tokens_indicativity_scores():
     return indicativity_scores
     
 def get_tokens_indicativity_scores():
-    return get_or_create(r'C://downloads/code_project/token_indicativity_scores.json', calculate_tokens_indicativity_scores, 'token indicativity scores')
+    return get_or_create(constants.INDICATIVITY_SCORES, calculate_tokens_indicativity_scores, 'token indicativity scores')
 
 token_to_indicativity_scores = get_tokens_indicativity_scores()
 print 'There are %d indicativity scores' % len(token_to_indicativity_scores)
