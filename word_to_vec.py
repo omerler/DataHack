@@ -1,6 +1,7 @@
 import os
 import json
 from collections import defaultdict, Counter
+import constants
 
 from create_corpus_tokens import DELIMITER_TOKEN
 
@@ -8,7 +9,7 @@ def read_tokens():
 
     BUFFER_SIZE = 10 ** 5
 
-    with open(r'C://downloads/code_project/global_tokens.txt', 'r') as f:
+    with open(constants.GLOBAL_TOKENS, 'r') as f:
     
         token = ''
     
@@ -108,10 +109,10 @@ def get_or_create(file_path, creation_method, what_creating):
         return created_object
     
 def get_token_freqs():
-    return get_or_create(r'C://downloads/code_project/token_freqs.json', create_token_freqs, 'token freuqencies')
+    return get_or_create(constants.TOKEN_FREQUENCIES, create_token_freqs, 'token freuqencies')
         
 def get_token_vectors():
-    return get_or_create(r'C://downloads/code_project/token_vectors.json', create_token_vectors, 'vector representation')
+    return get_or_create(constants.TOKEN_VECTORS, create_token_vectors, 'vector representation')
     
 def calc_distnace(token1, token2):
     #if token1 == token2:
