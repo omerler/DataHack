@@ -1,38 +1,29 @@
 import re
 from HTMLParser import HTMLParser
 
-class MLStripper(HTMLParser):
-    def __init__(self):
-        self.reset()
-        self.fed = []
-    def handle_data(self, d):
-        self.fed.append(d)
-    def get_data(self):
-        return ''.join(self.fed)
-        
-
-def strip_tags(html):
-    s = MLStripper()
-    s.feed(html)
-    return s.get_data()
-
+from lxml import etree
+from StringIO import StringIO
+from io import BytesIO
 
 def HTMLtoCodeAndTextParser(HtmlText):
-    # The function get a string represent HTML lines and an array with a tag
-    #  ("code" or "text"), when single word code are exclude
-    outputArray = []
-    HtmlText = HtmlText.replace('</code></pre>', '\n').replace('<pre><code>',
-         '\n<pre><code>').replace('<p>', '').replace('</p>',
-         '').replace(' <code>', ' ').replace('</code>', ' ').splitlines()
-    for line in HtmlText:
-        if line.startswith('<pre><code>'):
-            outputArray.append(("code", line))
-        else:
-            outputArray.append(("text", line))
-    cleanCode = []
-    for element in outputArray:
-        # element = (element[0], re.sub(r'<[\w\\]*>', '', element[1]))
-        element = (element[0], strip_tags(element[1]))
-        cleanCode.append(element)
-    cleanCode[:] = [item for item in cleanCode if item[1] != '']
-    return cleanCode
+    entries_context = etree.iterparse(BytesIO(HtmlText.encode('utf-8')),
+                                      html = True, events = ['end'])
+    text = ''
+    textArr = []
+    for i, (event, row) in enumerate(entries_context):
+        if row.tag == 'code' and row.text and ' ' in row.text:
+            if text:
+                textArr.append(('text', text))
+            textArr.append(('code', row.text))
+            text = ''
+        elif row.text:
+            text += row.text
+        del event
+        row.clear()
+        del row
+
+    if text:
+        textArr.append(('text', text))
+
+    del entries_context
+    return textArr
