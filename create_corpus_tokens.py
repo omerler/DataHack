@@ -38,8 +38,10 @@ if __name__ == "__main__":
 
         output_file.write(DELIMITER_TOKEN)
 
-        for post in get_posts(input_file):
+        for i, post in enumerate(get_posts(input_file)):
             post_texts = [post.title] + [get_stackoverflow_message_text(
                 post.question)] + [get_stackoverflow_message_text(answer) for answer in post.answers]
             for text in post_texts:
                 write_tokens(output_file, text)
+            if i % 1000 == 0:
+                print 'Post %d' % i

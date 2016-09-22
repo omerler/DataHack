@@ -16,10 +16,13 @@ import random
 from collections import defaultdict, Counter
 
 import numpy as np
-import scipy
-import scipy.spatial
+import scipy.stats
 
+from stackoverflow import get_posts
 from create_corpus_tokens import tokenize_text, get_stackoverflow_message_text, DELIMITER_TOKEN
+from word_to_vec import token_to_global_freq, calc_distnace, get_or_create
+
+TOTAL_POSTS = 856000
 
 def choose_two_different_indices(length):
     
@@ -30,11 +33,11 @@ def choose_two_different_indices(length):
         j = random.randint(0, length - 1)
         
      return i, j
-    
+     
 def normalize(counter):
     total = float(sum(counter.values()))
     return {key: value / total for key, value in counter.items()}
-    
+
 def get_tokens_frequency(tokens):
     return normalize(Counter(tokens))
     
@@ -44,94 +47,56 @@ def get_tokens_frequency_of_text(text):
 def get_tokens_frequency_in_stackoverflow_message(message):
     return get_tokens_frequency_of_text(get_stackoverflow_message_text(message))
     
-def read_tokens():
-
-    BUFFER_SIZE = 10 ** 5
-
-    with open(r'C://downloads/code_project/tokens.txt', 'r') as f:
-    
-        token = ''
-    
-        while True:
-        
-            buffer = f.read(BUFFER_SIZE)
-            
-            if len(buffer) == 0:
-                break
-        
-            for c in buffer:
-                if c == ' ':
-                    yield token
-                    token = ''
-                else:
-                    token += c
-
-def create_token_freqs_and_vectors(max_distance = 7):
-    
-    token_occurances = Counter()
-    token_cooccurances = Counter()
-    last_tokens = []
-    
-    for token in read_tokens():
-    
-        if token == DELIMITER_TOKEN:
-            last_tokens = []
-            continue
-        
-        token_occurances[token] += 1
-        
-        for prefix_token in last_tokens:
-            token_cooccurances[(token, prefix_token)] += 1
-        
-        if len(last_tokens) > max_distance:
-            last_tokens.pop(0)
-
-        last_tokens += [token]
-    
-    token_freqs = normalize(token_occurances)
-    token_list = list(token_occurances.keys())
-    token_vectors = {token: np.array([token_cooccurances[(token, other_token)] + token_cooccurances[(other_token, token)] for \
-            other_token in token_list], dtype = float) for token in token_list}
-    return token_freqs, token_vectors
-
-print 'Building vector representation...'
-token_to_global_freq, token_to_vector = create_token_freqs_and_vectors()
-print 'Built vector representation.'
-    
 def calculate_tokens_indicativity_scores():
     
     token_cofreqs = defaultdict(list) 
     
-    for post in posts:
+    for i, post in enumerate(get_posts(r'C://downloads/code_project/filtered_posts.json')):
+    
+        if i % 5000 == 0:
+            print 'Processed %d posts [%d%%]' % (i, int(100.0 * float(i) / TOTAL_POSTS))
+        
         if len(post.answers) > 1:
             
             answer_index1, answer_index2 = choose_two_different_indices(len(post.answers))
             answer1_token_freqs = get_tokens_frequency_in_stackoverflow_message(post.answers[answer_index1])
             answer2_token_freqs = get_tokens_frequency_in_stackoverflow_message(post.answers[answer_index2])
             
-            for token in answer1_token_freqs.keys() | answer2_token_freqs.keys():
+            for token in set(answer1_token_freqs.keys()) | set(answer2_token_freqs.keys()):
                 token_cofreqs[token] += [(answer1_token_freqs.get(token, 0), answer2_token_freqs.get(token, 0))]
     
-    return {token: scipy.stats.pearsonr(zip(*cofreqs)) for token, cofreqs in token_cofreqs.items()}
+    token, cofreqs = token_cofreqs.items()[0]
+    indicativity_scores = {token: scipy.stats.pearsonr(*zip(*cofreqs)) for token, cofreqs in token_cofreqs.items() if len(cofreqs) > 1}
+    indicativity_scores = {token: scores for token, scores in indicativity_scores.items() if not np.isnan(scores[0]) and not np.isnan(scores[1])}
+    return indicativity_scores
+    
+def get_tokens_indicativity_scores():
+    return get_or_create(r'C://downloads/code_project/token_indicativity_scores.json', calculate_tokens_indicativity_scores, 'token indicativity scores')
 
-print 'Creating indicativity scores...'
-token_to_indicativity_scores = calculate_tokens_indicativity_scores()
-print 'Created indicativity scores.'
+token_to_indicativity_scores = get_tokens_indicativity_scores()
+print 'There are %d indicativity scores' % len(token_to_indicativity_scores)
 
 def get_freq_distance(freq1, freq2):
     return min(freq1, freq2) / max(freq1, freq2)
+    
+DUMMY_PAIR_DISTANCE_METRICS = (10,) + 12 * (0,)
 
 def get_distance_metrics_for_pair_of_tokens(token1, freq1, token2, freq2):
-    distance = scipy.spatial.distance.cosine(token_to_vector[token1], token_to_vector[token2])
+
+    if token1 == token2:
+        distance = 0
+    elif token1 in token_to_global_freq and token2 in token_to_global_freq:
+        distance = calc_distnace(token1, token2)
+    else:
+        return DUMMY_PAIR_DISTANCE_METRICS
+    
     global_freq1 = token_to_global_freq[token1]
-    indicativity_coef1, indicativity_pval1 = token_to_indicativity_scores[token1]
+    indicativity_coef1, indicativity_pval1 = token_to_indicativity_scores.get(token1, (0, 1))
     global_freq2 = token_to_global_freq[token2]
-    indicativity_coef2, indicativity_pval2 = token_to_indicativity_scores[token2]
+    indicativity_coef2, indicativity_pval2 = token_to_indicativity_scores.get(token2, (0, 1))
     return distance, freq1, global_freq1, indicativity_coef1, indicativity_pval1, freq2, global_freq2, indicativity_coef2, indicativity_pval2, \
             get_freq_distance(freq1, global_freq1), get_freq_distance(freq2, global_freq2), get_freq_distance(freq1, freq2), \
             get_freq_distance(global_freq1, global_freq2), 
-    
-DUMMY_PAIR_DISTANCE_METRICS = (10,) + 12 * (0,)
     
 def get_distance_metrics_between_qeuery_and_reference(query_tokens, reference_tokens, pairs_to_take):
     
