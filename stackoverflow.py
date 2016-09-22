@@ -48,6 +48,4 @@ def get_posts(input_file):
             for ans in record['answers']:
                 answers.append(StackOverflowMessage(ans['Id'], ans['Body'], ans['Score']))
             question = StackOverflowMessage(record['Id'], record['Body'], record['Score'])
-            yield StackOverflowPost(record['Title'], record['Tags'],
-                                      record.get('FavoriteCount', -1), question,
-                                           answers)
+            yield StackOverflowPost(record['Title'], record['Tags'], record.get('FavoriteCount', -1), question, answers)
