@@ -1,5 +1,4 @@
 import javalang
-import pipeline
 
 
 class Argument(object):
@@ -16,7 +15,7 @@ class Method(object):
 
 
 def is_legitimate_method(method):
-    return "public static" not in method.name
+    return "public static main" not in method.name
 
 # Parsing methods
 
@@ -29,6 +28,7 @@ def parse_type(type):
 def parse_parameters(parameters):
     return ', '.join(['%s %s' % (parse_type(param.type), param.name) for param in parameters])
 
+
 def parse_throws(throws):
     if throws is None:
         return ''
@@ -38,21 +38,15 @@ def parse_throws(throws):
 
 
 def parse_method(method_node):
-    return pipline.Method(method_node.name, (parse_type(
+    return Method(method_node.name, (parse_type(
         method_node.return_type)),
                   parse_parameters(method_node.parameters),
                   parse_throws(method_node.throws))
 
-
-with open(r'example2.java', 'r') as f:
-    code = f.read()
-    for line in code:
-        print(line)
-    tree = javalang.parse.parse(code)
-    for i, (path, node) in enumerate(tree):
-        if isinstance(node, javalang.tree.MethodDeclaration):
-            method = parse_method(node)
-            print(method.name)
-            print(method.return_type)
-            print(method.arguments)
-            print(method.throws)
+# Tester
+# with open(r'example2.java', 'r') as f:
+#     code = f.read()
+#     tree = javalang.parse.parse(code)
+#     for i, (path, node) in enumerate(tree):
+#         if isinstance(node, javalang.tree.MethodDeclaration):
+#             method = parse_method(node)
