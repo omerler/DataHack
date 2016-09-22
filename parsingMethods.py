@@ -18,7 +18,7 @@ class Method(object):
         return '%s %s(%s) %s' % (self.return_type, self.name, ', '.join(map(str, self.arguments)), self.throws)
 
 def is_legitimate_method(method):
-    return "static main" not in method.name
+    return method.name != 'main'
 
 def parse_type(type):
     if type is None:
@@ -53,7 +53,6 @@ def extract_methods(contentArray):
                     if isinstance(node, javalang.tree.MethodDeclaration):
                         method = parse_method(node)
                         if is_legitimate_method(method):
-                            print method # XXX
                             methodsArr.append(method)
             except:
                 continue  # if code is written with mistakes - skip to the

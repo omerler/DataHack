@@ -16,7 +16,7 @@ if __name__ == "__main__":
     input_file = os.path.join(sys.argv[1], sys.argv[2])
     output_file = os.path.join(sys.argv[1], sys.argv[3])
 
-    with open(output_file, 'w') as output_file:
+    with open(output_file, 'wb') as output_file:
 
         csv_writer = csv.writer(output_file)
 

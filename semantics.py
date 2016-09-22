@@ -126,7 +126,7 @@ def get_distance_metrics_between_qeuery_and_references(query_tokens, references_
             reference_tokens in references_tokens]
     if len(distance_metric_groups) < references_to_take:
         distance_metric_groups += (references_to_take - len(distance_metric_groups)) * \
-                get_distance_metrics_between_qeuery_and_reference([], [], pairs_per_reference_to_take)
+                [get_distance_metrics_between_qeuery_and_reference({}, {}, pairs_per_reference_to_take)]
     return [metric for metric_group in distance_metric_groups for metric in metric_group]
     
 def extract_feature_vector(method, post, answer_to_remove = None):
