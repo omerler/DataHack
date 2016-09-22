@@ -41,7 +41,6 @@ class StackOverflowPost(object):
 
 
 def get_posts(input_file):
-    # input_file = os.path.join(sys.argv[1], sys.argv[2])
     posts = []
 
     with open(input_file, 'r') as input:
