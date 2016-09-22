@@ -17,8 +17,10 @@ def filtering(row):
     if row.attrib['PostTypeId'] == '1': # Query
         tags = parse_tags(row.attrib['Tags'])
         if 'java' in tags and 'android' not in tags:
-            required_posts[id] = {'query': dict(row.attrib), 'count': int(row.attrib['AnswerCount']), 'answers': []}
-            required_posts[id]['query']['Body'] = HTMLtoCodeAndTextParser(required_posts[id]['query']['Body'])
+            question = dict(row.attrib)
+            question['Tags'] = tags
+            question['Body'] = HTMLtoCodeAndTextParser(question['Body'])
+            required_posts[id] = {'query': question, 'count': int(row.attrib['AnswerCount']), 'answers': []}
     elif row.attrib['PostTypeId'] == '2':   # Answer
         parent_id = row.attrib['ParentId']
         if parent_id in required_posts:
