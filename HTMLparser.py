@@ -1,20 +1,19 @@
+import re
 
 def HTMLtoCodeAndTextParser(HtmlText):
-    # The function get a string represent HTML lines and Return two array:
-    # First - clean java code (exclude one word code)
-    # Second - answer text in strings (include one word code)
-    text = []
-    code = []
+    # The function get a string represent HTML lines and an array with a tag ("code" or "text"), when single word code are exclude
+    outputArray = []
     HtmlText = HtmlText.replace('</code></pre>', '\n').replace('<pre><code>',
          '\n<pre><code>').replace('<p>', '').replace('</p>',
          '').replace(' <code>', ' ').replace('</code>', ' ').splitlines()
-    for line in HtmlText:                                                                                                                                                            
+    for line in HtmlText:
         if line.startswith('<pre><code>'):
-            code.append(line)
+            outputArray.append(("code", line))
         else:
-            text.append(line)
+            outputArray.append(("text", line))
     cleanCode = []
-    for element in code:
-        element = element.replace('<pre><code>', "")
+    for element in outputArray:
+        element = (element[0], re.sub(r'<[\w\\]*>', '', element[1]))
         cleanCode.append(element)
-    return cleanCode, text
+    cleanCode[:] = [item for item in cleanCode if item[1] != '']
+    return cleanCode
