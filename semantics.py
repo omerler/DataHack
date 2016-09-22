@@ -15,12 +15,11 @@ distance between query tokens (query_token[1],..., query_token[k]) to reference 
 import random
 from collections import defaultdict, Counter
 
+import numpy as np
 import scipy
+import scipy.spatial
 
-from create_corpus_tokens import tokenize_text, get_stackoverflow_message_text
-
-token_to_global_freq = # a dictionary mapping tokens to frequency (0 to 1 float)
-token_to_vector = # a dictionary mapping tokens to their vector representation as np.array objects (Based on GLOVE)
+from create_corpus_tokens import tokenize_text, get_stackoverflow_message_text, DELIMITER_TOKEN
 
 def choose_two_different_indices(length):
     
@@ -30,7 +29,7 @@ def choose_two_different_indices(length):
      while j == i:
         j = random.randint(0, length - 1)
         
-    return i, j
+     return i, j
     
 def normalize(counter):
     total = float(sum(counter.values()))
@@ -44,6 +43,60 @@ def get_tokens_frequency_of_text(text):
     
 def get_tokens_frequency_in_stackoverflow_message(message):
     return get_tokens_frequency_of_text(get_stackoverflow_message_text(message))
+    
+def read_tokens():
+
+    BUFFER_SIZE = 10 ** 5
+
+    with open(r'C://downloads/code_project/tokens.txt', 'r') as f:
+    
+        token = ''
+    
+        while True:
+        
+            buffer = f.read(BUFFER_SIZE)
+            
+            if len(buffer) == 0:
+                break
+        
+            for c in buffer:
+                if c == ' ':
+                    yield token
+                    token = ''
+                else:
+                    token += c
+
+def create_token_freqs_and_vectors(max_distance = 7):
+    
+    token_occurances = Counter()
+    token_cooccurances = Counter()
+    last_tokens = []
+    
+    for token in read_tokens():
+    
+        if token == DELIMITER_TOKEN:
+            last_tokens = []
+            continue
+        
+        token_occurances[token] += 1
+        
+        for prefix_token in last_tokens:
+            token_cooccurances[(token, prefix_token)] += 1
+        
+        if len(last_tokens) > max_distance:
+            last_tokens.pop(0)
+
+        last_tokens += [token]
+    
+    token_freqs = normalize(token_occurances)
+    token_list = list(token_occurances.keys())
+    token_vectors = {token: np.array([token_cooccurances[(token, other_token)] + token_cooccurances[(other_token, token)] for \
+            other_token in token_list], dtype = float) for token in token_list}
+    return token_freqs, token_vectors
+
+print 'Building vector representation...'
+token_to_global_freq, token_to_vector = create_token_freqs_and_vectors()
+print 'Built vector representation.'
     
 def calculate_tokens_indicativity_scores():
     
@@ -60,8 +113,10 @@ def calculate_tokens_indicativity_scores():
                 token_cofreqs[token] += [(answer1_token_freqs.get(token, 0), answer2_token_freqs.get(token, 0))]
     
     return {token: scipy.stats.pearsonr(zip(*cofreqs)) for token, cofreqs in token_cofreqs.items()}
-    
+
+print 'Creating indicativity scores...'
 token_to_indicativity_scores = calculate_tokens_indicativity_scores()
+print 'Created indicativity scores.'
 
 def get_freq_distance(freq1, freq2):
     return min(freq1, freq2) / max(freq1, freq2)
@@ -119,7 +174,7 @@ def extract_feature_vector(method, post, answer_to_remove = None):
     title_tokens = get_tokens_frequency_in_stackoverflow_message(post.title)
     tags_tokens = {tag: 1.0 / len(post.tags) for tag in post.tags}
     
-    answers = [answer for post.answers if answer is not answer_to_remove]
+    answers = [answer for answer in post.answers if answer is not answer_to_remove]
     answers = sorted(answers, key = lambda answer: answer.votes, reverse = True)[:ANSWERS_TO_TAKE]
     answers_tokens = map(get_tokens_frequency_in_stackoverflow_message, answers)
     
