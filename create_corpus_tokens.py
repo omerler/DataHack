@@ -3,7 +3,6 @@ from stackoverflow import get_posts
 
 DELIMITER_TOKEN = '$$$'
 
-
 def tokenize_word(raw_word):
     '''
     Handles Camel Case.
@@ -18,10 +17,8 @@ def tokenize_word(raw_word):
         last_lower = c.islower()
     return tokens
 
-
 def tokenize_text(raw_text):
     return [token for word in re.split('[^a-zA-Z]+', raw_text) for token in tokenize_word(word)]
-
 
 def write_tokens(output_file, raw_text):
     tokens = tokenize_text(raw_text)
@@ -33,11 +30,10 @@ def get_stackoverflow_message_text(message):
 
 
 if __name__ == "__main__":
+    
     input_file = os.path.join(sys.argv[1], sys.argv[2])
     output_file = os.path.join(sys.argv[1], sys.argv[3])
-    # os.path.join(DIR, 'corpus_tokens.txt')
 
-    input_file = os.path.join(sys.argv[1], sys.argv[2])
     with open(output_file, 'w') as output_file:
 
         output_file.write(DELIMITER_TOKEN)

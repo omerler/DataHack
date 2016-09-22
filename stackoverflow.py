@@ -41,8 +41,6 @@ class StackOverflowPost(object):
 
 
 def get_posts(input_file):
-    posts = []
-
     with open(input_file, 'r') as input:
         for raw_record in input:
             record = json.loads(raw_record)
@@ -50,9 +48,6 @@ def get_posts(input_file):
             for ans in record['answers']:
                 answers.append(StackOverflowMessage(ans['Id'], ans['Body'], ans['Score']))
             question = StackOverflowMessage(record['Id'], record['Body'], record['Score'])
-            posts.append(StackOverflowPost(record['Title'], record['Tags'],
-                                      record['FavoriteCount'], question,
-                                           answers))
-            # print json.dumps(post.to_dict())
-
-    return posts
+            yield StackOverflowPost(record['Title'], record['Tags'],
+                                      record.get('FavoriteCount', -1), question,
+                                           answers)
