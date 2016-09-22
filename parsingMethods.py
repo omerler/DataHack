@@ -2,9 +2,11 @@ import javalang
 import re
 
 class Argument(object):
-    def __init__(self, name, type):
+    def __init__(self, type, name):
         self.name = name
         self.type = type
+    def __str__(self):
+        return '%s %s' % (self.type, self.name)
 
 class Method(object):
     def __init__(self, name, return_type, arguments, throws):
@@ -12,6 +14,8 @@ class Method(object):
         self.return_type = return_type
         self.arguments = arguments
         self.throws = throws
+    def __str__(self):
+        return '%s %s(%s) %s' % (self.return_type, self.name, ', '.join(map(str, self.arguments)), self.throws)
 
 def is_legitimate_method(method):
     return "static main" not in method.name
@@ -32,8 +36,7 @@ def parse_throws(throws):
         return 'throws ' + str(throws)
 
 def parse_method(method_node):
-    return Method(method_node.name, parse_type(ethod_node.return_type), parse_parameters(method_node.parameters), parse_throws(method_node.throws))
-
+    return Method(method_node.name, parse_type(method_node.return_type), parse_parameters(method_node.parameters), parse_throws(method_node.throws))
 
 def extract_methods(contentArray):
     '''
@@ -42,23 +45,19 @@ def extract_methods(contentArray):
     methodsArr = []
     for data_type, data_content in contentArray:
         if data_type == "code":
-            print 'Checking: ' + data_content # XXX
             try:
-                if 'class' not in data[1]:
-                    data = (data[0], "public class module {\n" + data[1] + "\n}")
+                if 'class' not in data_content:
+                    data_content = "public class module {\n" + data_content + "\n}"
                 tree = javalang.parse.parse(data_content)
                 for path, node in tree:
                     if isinstance(node, javalang.tree.MethodDeclaration):
-                        print 'Found method !' # XXX
                         method = parse_method(node)
                         if is_legitimate_method(method):
+                            print method # XXX
                             methodsArr.append(method)
             except:
-                print 'Excpetion!!!'
                 continue  # if code is written with mistakes - skip to the
                 # next code line. todo specificity in order to extand.
-    if methodsArr:
-        print 'Found method!!!'
     return methodsArr
 
 # with open(r'example2.java', 'r') as f:

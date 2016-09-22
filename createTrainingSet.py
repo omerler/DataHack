@@ -29,10 +29,6 @@ if __name__ == "__main__":
             if i % 1000 == 0:
                 print 'Processed %d posts [%d%%]' % (i, int(100.0 * float(i) / TOTAL_POSTS))
             
-            # XXX
-            if i > 10:
-                break 
-        
             for answer in post.answers:
                 for method in extract_methods(answer.content):
                     

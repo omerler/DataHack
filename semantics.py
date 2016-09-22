@@ -74,8 +74,7 @@ def calculate_tokens_indicativity_scores():
 def get_tokens_indicativity_scores():
     return get_or_create(constants.INDICATIVITY_SCORES, calculate_tokens_indicativity_scores, 'token indicativity scores')
 
-#token_to_indicativity_scores = get_tokens_indicativity_scores()
-token_to_indicativity_scores = {}
+token_to_indicativity_scores = get_tokens_indicativity_scores()
 print 'There are %d indicativity scores' % len(token_to_indicativity_scores)
 
 def get_freq_distance(freq1, freq2):
@@ -138,25 +137,28 @@ def extract_feature_vector(method, post, answer_to_remove = None):
     method_return_type_token = {method.return_type: 1.0}
     
     question_tokens = get_tokens_frequency_in_stackoverflow_message(post.question)
-    title_tokens = get_tokens_frequency_in_stackoverflow_message(post.title)
+    title_tokens = get_tokens_frequency_of_text(post.title)
     tags_tokens = {tag: 1.0 / len(post.tags) for tag in post.tags}
     
     answers = [answer for answer in post.answers if answer is not answer_to_remove]
-    answers = sorted(answers, key = lambda answer: answer.votes, reverse = True)[:ANSWERS_TO_TAKE]
+    answers = sorted(answers, key = lambda answer: answer.votes, reverse = True)[:5]
     answers_tokens = map(get_tokens_frequency_in_stackoverflow_message, answers)
     
-    features = []
-    
-    def _add_features_for_method_tokens(method_tokens, answers_to_take, pairs_per_answer, question_pairs, title_pairs, tag_pairs):
+    def _add_features_for_method_tokens(features, method_tokens, answers_to_take, pairs_per_answer, question_pairs, title_pairs, tag_pairs):
         features += get_distance_metrics_between_qeuery_and_references(method_tokens, answers_tokens, references_to_take = answers_to_take, \
                 pairs_per_reference_to_take = pairs_per_answer)
         features += get_distance_metrics_between_qeuery_and_reference(method_tokens, question_tokens, pairs_to_take = question_pairs)
         features += get_distance_metrics_between_qeuery_and_reference(method_tokens, title_tokens, pairs_to_take = title_pairs)
         features += get_distance_metrics_between_qeuery_and_reference(method_tokens, tags_tokens, pairs_to_take = tag_pairs)
-        
-    _add_features_for_method_tokens(method_name_tokens, answers_to_take = 5, pairs_per_answer = 10, question_pairs = 20, title_pairs = 6, tag_pairs = 4)
-    _add_features_for_method_tokens(method_arg_name_tokens, answers_to_take = 2, pairs_per_answer = 3, question_pairs = 3, title_pairs = 2, tag_pairs = 2)
-    _add_features_for_method_tokens(method_arg_type_tokens, answers_to_take = 2, pairs_per_answer = 3, question_pairs = 3, title_pairs = 2, tag_pairs = 2)
-    _add_features_for_method_tokens(method_return_type_token, answers_to_take = 2, pairs_per_answer = 1, question_pairs = 1, title_pairs = 1, tag_pairs = 1)
+    
+    features = []
+    _add_features_for_method_tokens(features, method_name_tokens, answers_to_take = 5, pairs_per_answer = 10, question_pairs = 20, \
+            title_pairs = 6, tag_pairs = 4)
+    _add_features_for_method_tokens(features, method_arg_name_tokens, answers_to_take = 2, pairs_per_answer = 3, question_pairs = 3, \
+            title_pairs = 2, tag_pairs = 2)
+    _add_features_for_method_tokens(features, method_arg_type_tokens, answers_to_take = 2, pairs_per_answer = 3, question_pairs = 3, \
+            title_pairs = 2, tag_pairs = 2)
+    _add_features_for_method_tokens(features, method_return_type_token, answers_to_take = 2, pairs_per_answer = 1, question_pairs = 1, \
+            title_pairs = 1, tag_pairs = 1)
 
     return features

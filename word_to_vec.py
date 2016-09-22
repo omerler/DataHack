@@ -115,19 +115,18 @@ def get_token_vectors():
     return get_or_create(constants.TOKEN_VECTORS, create_token_vectors, 'vector representation')
     
 def calc_distnace(token1, token2):
-    #if token1 == token2:
-    #    return 0
-    #else:
-    vector1 = token_to_vector[token1]
-    vector2 = token_to_vector[token2]
-    common_keys = set(vector1.keys()) | set(vector2.keys())
-    cosine = sum([vector1.get(key, 0) * vector2.get(key, 0) for key in common_keys])
-    return 1 - cosine
+    if token1 == token2:
+        return 0
+    else:
+        vector1 = token_to_vector[token1]
+        vector2 = token_to_vector[token2]
+        common_keys = set(vector1.keys()) | set(vector2.keys())
+        cosine = sum([vector1.get(key, 0) * vector2.get(key, 0) for key in common_keys])
+        return 1 - cosine
 
 token_to_global_freq = get_token_freqs()
 print 'There are %d tokens' % len(token_to_global_freq)
 tokens_sorted_by_freq = list(sorted(token_to_global_freq.keys(), key = lambda token: token_to_global_freq[token], reverse = True))
 
-#token_to_vector = get_token_vectors()
-token_to_vector = {}
+token_to_vector = get_token_vectors()
 print 'There are %d token vectors' % len(token_to_vector)
