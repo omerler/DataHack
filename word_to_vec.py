@@ -130,13 +130,15 @@ def get_token_vectors():
 
 @cache
 def calc_distnace(token1, token2):
-    if token1 == token2:
-        return 0
-    else:
-        vector1 = token_to_vector[token1]
-        vector2 = token_to_vector[token2]
-        cosine = sum([vector1[key] * vector2.get(key, 0) for key in vector1.keys()])
-        return 1 - cosine
+    
+    vector1 = token_to_vector[token1]
+    vector2 = token_to_vector[token2]
+    
+    if len(vector2) < len(vector1):
+        vector1, vector2 = vector2, vector1
+    
+    cosine = sum([vector1[key] * vector2.get(key, 0) for key in vector1.keys()])
+    return 1 - cosine
 
 token_to_global_freq = get_token_freqs()
 print 'There are %d tokens' % len(token_to_global_freq)
