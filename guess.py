@@ -7,12 +7,13 @@ import pickle
 
 import numpy as np
 
+from constants import DIR, FILTERED_POSTS
 from stackoverflow import get_posts
-from parsingMethods import *
-from semantics import *
-from constants import DIR
+from parsingMethods import parse_method
+from semantics import extract_feature_vector
+from createTrainingSet import get_method_tokens, get_post_tokens, hueristic_filter
 
-sys.argv = [None, 'public static JButton createButton(Graphics graphics){}'] # XXX
+sys.argv = [None, 'public static T[] sortArray(T[] array){}'] # XXX
 
 with open(os.path.join(DIR, 'model.pkl'), 'r') as f:
     model = pickle.load(f)
@@ -25,35 +26,25 @@ def getMethod(userMethodSignature):
             method = parse_method(node)
             return method
 
-def getMethodTokens(method):
-    method_name_tokens = get_tokens_frequency_of_text(method.name)
-    method_arg_name_tokens = get_tokens_frequency([argument.name for argument in method.arguments])
-    method_arg_type_tokens = get_tokens_frequency([argument.type for argument in method.arguments])
-    method_return_type_token = {method.return_type: 1.0}
-    return set(method_name_tokens) | set(method_arg_name_tokens) | set(method_arg_type_tokens) | set(method_return_type_token)
-
 def findHueristic(method):
     
     nearestPost = []
-    userTokens = set(getMethodTokens(method))
+    method_tokens = get_method_tokens(method)
     
-    for i, post in enumerate(get_posts(constants.FILTERED_POSTS)):
+    for i, post in enumerate(get_posts(FILTERED_POSTS)):
     
-        title_shared_tokens = len(set(tokenize_text(post.title)) & userTokens)
-        question_shared_tokens = len(set(tokenize_text(get_stackoverflow_message_text(post.question))) & userTokens)
-        answers_shared_tokens = len(set.union(*[set(tokenize_text(get_stackoverflow_message_text(answer))) for answer in post.answers]) & userTokens)
-        
-        if title_shared_tokens > 0 and question_shared_tokens > 0 and answers_shared_tokens > 1:
+        post_tokens = get_post_tokens(post)
+    
+        if hueristic_filter(method_tokens, post_tokens):
             nearestPost.append(post)
         
         if i % 10000 == 0:
             print 'Processed %d posts' % i
         
         # XXX
-        if i > 10000:
+        if i > 20000:
             break
     
-    print len(nearestPost) # XXX
     return nearestPost
 
 def secondSort(nearestPost, method):
@@ -63,11 +54,12 @@ def secondSort(nearestPost, method):
         features[np.isnan(features)] = -1
         prob = model.predict_proba(features)[0][1]
         postsDict[post.title] = prob
-    return sorted(postsDict.items(), key=operator.itemgetter(1), reverse=True)#[:10]
+    return sorted(postsDict.items(), key=operator.itemgetter(1), reverse=True)[:20]
 
 def manager(userMethodSignature):
     method = getMethod(userMethodSignature)
     nearestPosts = findHueristic(method)
+    print 'Preliminary filter: %d' % len(nearestPosts)
     return secondSort(nearestPosts, method)
     
 if __name__ == '__main__':
