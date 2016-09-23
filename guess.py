@@ -13,7 +13,7 @@ from parsingMethods import parse_method
 from semantics import extract_feature_vector
 from createTrainingSet import get_method_tokens, get_post_tokens, hueristic_filter
 
-sys.argv = [None, 'public static Session getConnection(){}'] # XXX
+sys.argv = [None, 'public static Button createButton(Graphics graphics)'] # XXX
 
 with open(os.path.join(DIR, 'model.pkl'), 'r') as f:
     model = pickle.load(f)
@@ -42,7 +42,7 @@ def findHueristic(method):
             print 'Processed %d posts' % i
         
         # XXX
-        if i > 20000:
+        if i > 5000:
             break
     
     return nearestPost
@@ -57,7 +57,7 @@ def secondSort(nearestPost, method):
     return sorted(postsDict.items(), key=operator.itemgetter(1), reverse=True)[:20]
 
 def manager(userMethodSignature):
-    method = getMethod(userMethodSignature)
+    method = getMethod(userMethodSignature + '{}')
     nearestPosts = findHueristic(method)
     print 'Preliminary filter: %d' % len(nearestPosts)
     return secondSort(nearestPosts, method)
