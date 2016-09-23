@@ -13,7 +13,7 @@ from parsingMethods import parse_method
 from semantics import extract_feature_vector
 from createTrainingSet import get_method_tokens, get_post_tokens, hueristic_filter
 
-sys.argv = [None, 'public static T[] sortArray(T[] array){}'] # XXX
+sys.argv = [None, 'public static Session getConnection(){}'] # XXX
 
 with open(os.path.join(DIR, 'model.pkl'), 'r') as f:
     model = pickle.load(f)
