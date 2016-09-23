@@ -5,6 +5,19 @@ import constants
 
 from create_corpus_tokens import DELIMITER_TOKEN
 
+def cache(f):
+
+    _cache = {}
+    
+    def _wraped(*args):
+        
+        if args not in _cache:
+            _cache[args] = f(*args)
+            
+        return _cache[args]
+    
+    return _wraped
+
 def read_tokens():
 
     BUFFER_SIZE = 10 ** 5
@@ -70,7 +83,7 @@ def index_tokens(max_processed_tokens = 50 * (10 ** 6)):
     print 'Indexed tokens.'
     return tokens, tokens_index
 
-def create_token_vectors(max_distance = 7, filter_threshold = 1):
+def create_token_vectors(max_distance = 7, filter_threshold = 1, max_vector_size = 500):
 
     tokens, tokens_index = index_tokens()
     
@@ -89,7 +102,8 @@ def create_token_vectors(max_distance = 7, filter_threshold = 1):
             vector.update(document[(index_in_document + 1):(windows_end_index + 1)])
         
         norm = float(sum([value ** 2 for value in vector.values()])) ** 0.5
-        return {key: float(value) / norm for key, value in vector.items() if value >= filter_threshold}
+        vector = {key: float(value) / norm for key, value in vector.items() if value >= filter_threshold}
+        return dict(sorted(vector.items(), key = lambda item: item[1], reverse = True)[:max_vector_size])
     
     return {token: _create_token_vector(token_id) for token_id, token in enumerate(tokens_sorted_by_freq)}
     
@@ -113,15 +127,15 @@ def get_token_freqs():
         
 def get_token_vectors():
     return get_or_create(constants.TOKEN_VECTORS, create_token_vectors, 'vector representation')
-    
+
+@cache
 def calc_distnace(token1, token2):
     if token1 == token2:
         return 0
     else:
         vector1 = token_to_vector[token1]
         vector2 = token_to_vector[token2]
-        common_keys = set(vector1.keys()) | set(vector2.keys())
-        cosine = sum([vector1.get(key, 0) * vector2.get(key, 0) for key in common_keys])
+        cosine = sum([vector1[key] * vector2.get(key, 0) for key in vector1.keys()])
         return 1 - cosine
 
 token_to_global_freq = get_token_freqs()

@@ -26,7 +26,7 @@ if __name__ == "__main__":
         prev_post = None
         for i, post in enumerate(get_posts(input_file)):
         
-            if i % 1000 == 0:
+            if i % 1 == 0:
                 print 'Processed %d posts [%d%%]' % (i, int(100.0 * float(i) / TOTAL_POSTS))
             
             for answer in post.answers:
@@ -44,6 +44,6 @@ if __name__ == "__main__":
                         total_negative_features += 1
 
             prev_post = post
-
+            
         print "total of positive features: %d" % total_positive_features
         print "total of negative features: %d" % total_negative_features
