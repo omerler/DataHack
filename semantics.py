@@ -19,6 +19,7 @@ import constants
 import numpy as np
 import scipy.stats
 
+from parsingMethods import extract_methods
 from stackoverflow import get_posts
 from create_corpus_tokens import tokenize_text, get_stackoverflow_message_text, DELIMITER_TOKEN
 from word_to_vec import token_to_global_freq, calc_distnace, get_or_create
@@ -78,7 +79,10 @@ token_to_indicativity_scores = get_tokens_indicativity_scores()
 print 'There are %d indicativity scores' % len(token_to_indicativity_scores)
 
 def get_freq_distance(freq1, freq2):
-    return min(freq1, freq2) / max(freq1, freq2)
+    if freq1 == 0 and freq2 == 0:
+        return -1
+    else:
+        return min(freq1, freq2) / max(freq1, freq2)
     
 DUMMY_PAIR_DISTANCE_METRICS = (10,) + 12 * (0,)
 
@@ -91,9 +95,9 @@ def get_distance_metrics_for_pair_of_tokens(token1, freq1, token2, freq2):
     else:
         return DUMMY_PAIR_DISTANCE_METRICS
     
-    global_freq1 = token_to_global_freq[token1]
+    global_freq1 = token_to_global_freq.get(token1, 0)
     indicativity_coef1, indicativity_pval1 = token_to_indicativity_scores.get(token1, (0, 1))
-    global_freq2 = token_to_global_freq[token2]
+    global_freq2 = token_to_global_freq.get(token2, 0)
     indicativity_coef2, indicativity_pval2 = token_to_indicativity_scores.get(token2, (0, 1))
     return distance, freq1, global_freq1, indicativity_coef1, indicativity_pval1, freq2, global_freq2, indicativity_coef2, indicativity_pval2, \
             get_freq_distance(freq1, global_freq1), get_freq_distance(freq2, global_freq2), get_freq_distance(freq1, freq2), \
@@ -123,7 +127,7 @@ def get_distance_metrics_between_qeuery_and_reference(query_tokens, reference_to
     
 def get_distance_metrics_between_qeuery_and_references(query_tokens, references_tokens, references_to_take, pairs_per_reference_to_take):
     distance_metric_groups = [get_distance_metrics_between_qeuery_and_reference(query_tokens, reference_tokens, pairs_per_reference_to_take) for \
-            reference_tokens in references_tokens]
+            reference_tokens in references_tokens[:references_to_take]]
     if len(distance_metric_groups) < references_to_take:
         distance_metric_groups += (references_to_take - len(distance_metric_groups)) * \
                 [get_distance_metrics_between_qeuery_and_reference({}, {}, pairs_per_reference_to_take)]
@@ -143,7 +147,7 @@ def extract_feature_vector(method, post, answer_to_remove = None):
     answers = [answer for answer in post.answers if answer is not answer_to_remove]
     answers = sorted(answers, key = lambda answer: answer.votes, reverse = True)[:5]
     answers_tokens = map(get_tokens_frequency_in_stackoverflow_message, answers)
-    
+        
     def _add_features_for_method_tokens(features, method_tokens, answers_to_take, pairs_per_answer, question_pairs, title_pairs, tag_pairs):
         features += get_distance_metrics_between_qeuery_and_references(method_tokens, answers_tokens, references_to_take = answers_to_take, \
                 pairs_per_reference_to_take = pairs_per_answer)
@@ -160,5 +164,23 @@ def extract_feature_vector(method, post, answer_to_remove = None):
             title_pairs = 2, tag_pairs = 2)
     _add_features_for_method_tokens(features, method_return_type_token, answers_to_take = 2, pairs_per_answer = 1, question_pairs = 1, \
             title_pairs = 1, tag_pairs = 1)
+            
+    question_methods = extract_methods(post.question.content)[:1]
+    answer_methods = [method for answer in answers for method in extract_methods(answer.content)[:1]]
+
+    def _add_features_between_methods(features, reference_methods, references_to_take):
+        features += get_distance_metrics_between_qeuery_and_references(method_name_tokens, [get_tokens_frequency_of_text(reference_method.name) \
+                for reference_method in reference_methods], references_to_take = references_to_take, pairs_per_reference_to_take = 3)
+        features += get_distance_metrics_between_qeuery_and_references(method_arg_name_tokens, [get_tokens_frequency( \
+                [argument.name for argument in reference_method.arguments]) for reference_method in reference_methods], \
+                references_to_take = references_to_take, pairs_per_reference_to_take = 2)
+        features += get_distance_metrics_between_qeuery_and_references(method_arg_type_tokens, [get_tokens_frequency( \
+                [argument.type for argument in reference_method.arguments]) for reference_method in reference_methods], \
+                references_to_take = references_to_take, pairs_per_reference_to_take = 2)
+        features += get_distance_metrics_between_qeuery_and_references(method_return_type_token, [{reference_method.return_type: 1.0} for reference_method \
+                in reference_methods], references_to_take = references_to_take, pairs_per_reference_to_take = 1)
+
+    _add_features_between_methods(features, question_methods, 1)
+    _add_features_between_methods(features, answer_methods, 2)
 
     return features

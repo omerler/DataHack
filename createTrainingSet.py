@@ -26,19 +26,24 @@ if __name__ == "__main__":
         prev_post = None
         for i, post in enumerate(get_posts(input_file)):
         
-            if i % 1 == 0:
+            if i % 100 == 0:
                 print 'Processed %d posts [%d%%]' % (i, int(100.0 * float(i) / TOTAL_POSTS))
             
             for answer in post.answers:
                 for method in extract_methods(answer.content):
                     
-                    print "post: %s, answer: %s, method: %s" % (post.question.id, answer.id, method.name)
+                    if i % 100 == 0:
+                        print "post: %s, answer: %s, method: %s" % (post.question.id, answer.id, method.name)
+                    
                     feature_positive_vector = extract_feature_vector(method, post, answer)
                     write_dataset_record(csv_writer, feature_positive_vector, label = 1)
                     total_positive_features += 1
                     
                     if prev_post is not None:
-                        print "post: %s, answer: %s, method: %s" % (prev_post.question.id, answer.id, method.name)
+                    
+                        if i % 100 == 0:
+                            print "post: %s, answer: %s, method: %s" % (prev_post.question.id, answer.id, method.name)
+                        
                         feature_negative_vector = extract_feature_vector(method, prev_post, answer)
                         write_dataset_record(csv_writer, feature_negative_vector, label = 0)
                         total_negative_features += 1

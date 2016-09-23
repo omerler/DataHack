@@ -83,7 +83,7 @@ def index_tokens(max_processed_tokens = 50 * (10 ** 6)):
     print 'Indexed tokens.'
     return tokens, tokens_index
 
-def create_token_vectors(max_distance = 7, filter_threshold = 1, max_vector_size = 500):
+def create_token_vectors(max_distance = 7, filter_threshold = 1, max_vector_size = 1000):
 
     tokens, tokens_index = index_tokens()
     
@@ -101,9 +101,10 @@ def create_token_vectors(max_distance = 7, filter_threshold = 1, max_vector_size
             vector.update(document[windows_start_index:index_in_document])
             vector.update(document[(index_in_document + 1):(windows_end_index + 1)])
         
+        vector = {key: value for key, value in vector.items() if value >= filter_threshold}
+        vector = dict(sorted(vector.items(), key = lambda item: item[1], reverse = True)[:max_vector_size])
         norm = float(sum([value ** 2 for value in vector.values()])) ** 0.5
-        vector = {key: float(value) / norm for key, value in vector.items() if value >= filter_threshold}
-        return dict(sorted(vector.items(), key = lambda item: item[1], reverse = True)[:max_vector_size])
+        return {key: float(value) / norm for key, value in vector.items()}
     
     return {token: _create_token_vector(token_id) for token_id, token in enumerate(tokens_sorted_by_freq)}
     
